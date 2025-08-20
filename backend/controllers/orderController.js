@@ -1,15 +1,12 @@
 import orderModel from './../models/orderModel.js';
 import userModel from './../models/userModel.js';
 import Stripe from 'stripe'
-
-
 //global variables
 const currency = 'inr'
 const deliveryCharge = 10
 
 // geteway  initialize
-// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
-
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
 
 // placing orders using CDD method
@@ -111,7 +108,6 @@ const placeOrderStripe = async (req, res) => {
 // Verify Stripe
 const verifyStripe = async (req, res) => {
 
-
     const { orderId, success, userId } = req.body
     try {
         if (success === "true") {
@@ -120,7 +116,7 @@ const verifyStripe = async (req, res) => {
             res.json({ success: true })
         } else {
             await orderModel.findByIdAndUpdate(orderId)
-            res.json({success: false})
+            res.json({ success: false })
         }
     } catch (error) {
         console.log(error);
@@ -184,4 +180,4 @@ const updateStatus = async (req, res) => {
 }
 
 
-export {verifyStripe, placeOrder, placeOrderStripe, placeOrderRazorpay, allOrders, userOrders, updateStatus }
+export { placeOrder,placeOrderStripe, placeOrderRazorpay, allOrders, userOrders, updateStatus }
