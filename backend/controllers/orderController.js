@@ -1,9 +1,13 @@
 import orderModel from './../models/orderModel.js';
 import userModel from './../models/userModel.js';
-import Stripe from 'stripe'
+import Stripe from 'stripe';
+import dotenv from "dotenv";
 //global variables
 const currency = 'inr'
 const deliveryCharge = 10
+
+
+dotenv.config();
 
 // geteway  initialize
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
@@ -180,4 +184,4 @@ const updateStatus = async (req, res) => {
 }
 
 
-export { placeOrder,placeOrderStripe, placeOrderRazorpay, allOrders, userOrders, updateStatus }
+export { placeOrder,placeOrderStripe, placeOrderRazorpay, allOrders, userOrders, updateStatus ,verifyStripe }
