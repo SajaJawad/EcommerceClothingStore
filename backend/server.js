@@ -9,6 +9,7 @@ import userRouter from "./routes/userRoute.js";
 import productRouter from "./routes/productRouter.js";
 import cartRouter from "./routes/cartRoute.js";
 import orderRouter from "./routes/orderRoute.js";
+import connectCloudinary from './config/cloudinary.js';
 
 
 
@@ -16,7 +17,7 @@ import orderRouter from "./routes/orderRoute.js";
 const app = express();
 const port = process.env.PORT || 4000;
 connectDB();
-// connectCloudinary()
+connectCloudinary()
 // middlewares
 app.use(express.json());
 app.use(cors());
