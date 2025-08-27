@@ -110,9 +110,11 @@ const ShopContextProvider = (props) => {
 
   const getProductsData = async () => {
     try {
-
+      // console.log('mmmmmmmmmmmmmmmmmmmmmmmmmm');
+      
       const response = await axios.get(backendUrl + '/api/product/list')
       if (response.data.success) {
+        // console.log('monther', response.data);
         setProducts(response.data.products)
       } else {
         toast.error(response.data.message)
@@ -144,7 +146,7 @@ const ShopContextProvider = (props) => {
   useEffect(() => {
     if (!token && localStorage.getItem('token')) {
       setToken(localStorage.getItem('token'))
-      getUserCart( localStorage.getItem('token'))
+      getUserCart(localStorage.getItem('token'))
     }
   }, [])
 
@@ -161,7 +163,7 @@ const ShopContextProvider = (props) => {
     setCartItems,
     getCartCount,
     updateQuantity,
-    getCartAmount, navigate, backendUrl, setToken, token
+    getCartAmount, navigate, backendUrl, setToken, token ,getProductsData
   };
 
   return (
