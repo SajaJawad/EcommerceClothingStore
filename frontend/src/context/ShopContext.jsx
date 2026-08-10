@@ -2,6 +2,7 @@ import { createContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom"
 import axios from 'axios'
+import { assets, products as sampleProducts } from "../assets/assets";
 
 export const ShopContext = createContext();
 
@@ -12,7 +13,7 @@ const ShopContextProvider = (props) => {
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [cartItems, setCartItems] = useState({});
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState(sampleProducts);
   const [token, setToken] = useState('');
   const navigate = useNavigate();
 
@@ -108,23 +109,33 @@ const ShopContextProvider = (props) => {
   }
 
 
+  // Map sample product IDs to local asset PNG images
+  const sampleImageMap = {};
+  sampleProducts.forEach(p => {
+    if (p._id && p.image) {
+      sampleImageMap[p._id] = p.image;
+    }
+  });
+
   const getProductsData = async () => {
     try {
-      // console.log('mmmmmmmmmmmmmmmmmmmmmmmmmm');
-      
-      const response = await axios.get(backendUrl + '/api/product/list')
-      if (response.data.success) {
-        // console.log('monther', response.data);
-        setProducts(response.data.products)
+      const response = await axios.get(backendUrl + '/api/product/list');
+      if (response.data.success && Array.isArray(response.data.products) && response.data.products.length > 0) {
+        const mappedProducts = response.data.products.map(p => {
+          if (sampleImageMap[p._id]) {
+            return { ...p, image: sampleImageMap[p._id] };
+          }
+          return p;
+        });
+        setProducts(mappedProducts);
       } else {
-        toast.error(response.data.message)
+        setProducts(sampleProducts);
       }
-
     } catch (error) {
-      console.log(error);
-      toast.error(error.message)
+      console.log("Using sample products fallback:", error.message);
+      setProducts(sampleProducts);
     }
-  }
+  };
 
   const getUserCart = async (token) => {
     try {

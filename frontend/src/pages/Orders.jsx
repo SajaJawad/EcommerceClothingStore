@@ -117,13 +117,15 @@ const Orders = () => {
             );
             if (response.data.success) {
                 let allOrdersItem = [];
-                response.data.orders.map((order) => {
-                    order.items.map((item) => {
-                        item["status"] = order.status;
-                        item["payment"] = order.payment;
-                        item["paymentMethod"] = order.paymentMethod;
-                        item["date"] = order.date;
-                        allOrdersItem.push(item);
+                response.data.orders.forEach((order) => {
+                    order.items.forEach((item) => {
+                        allOrdersItem.push({
+                            ...item,
+                            status: order.status || 'Order Placed',
+                            payment: order.payment,
+                            paymentMethod: order.paymentMethod,
+                            date: order.date
+                        });
                     });
                 });
                 setOrderData(allOrdersItem.reverse());
@@ -136,6 +138,12 @@ const Orders = () => {
 
     useEffect(() => {
         loadOrderData();
+        const interval = setInterval(() => {
+            if (token) {
+                loadOrderData();
+            }
+        }, 3000);
+        return () => clearInterval(interval);
     }, [token]);
 
     return (

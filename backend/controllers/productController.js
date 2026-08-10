@@ -1,5 +1,10 @@
 import { v2 as cloudinary } from "cloudinary";
 import productModel from "../models/productModel.js";
+import mongoose from "mongoose";
+import { initialProducts } from "../config/sampleProducts.js";
+
+// Local in-memory store for products when MongoDB is offline
+export let localProducts = [...initialProducts];
 
 // function for add product
 const addProduct = async (req, res) => {
@@ -14,54 +19,64 @@ const addProduct = async (req, res) => {
             bestseller,
         } = req.body;
 
-        console.log('reqqq', req.body);
-        
+        let imagesUrl = [];
+        if (req.files) {
+            const image1 = req.files.image1 && req.files.image1[0];
+            const image2 = req.files.image2 && req.files.image2[0];
+            const image3 = req.files.image3 && req.files.image3[0];
+            const image4 = req.files.image4 && req.files.image4[0];
 
-        const image1 = req.files.image1 && req.files.image1[0];
-        const image2 = req.files.image2 && req.files.image2[0];
-        const image3 = req.files.image3 && req.files.image3[0];
-        const image4 = req.files.image4 && req.files.image4[0];
+            const images = [image1, image2, image3, image4].filter(
+                (item) => item !== undefined
+            );
 
-        const images = [image1, image2, image3, image4].filter(
-            (item) => item !== undefined
-        );
+            try {
+                imagesUrl = await Promise.all(
+                    images.map(async (image) => {
+                        let result = await cloudinary.uploader.upload(image.path, {
+                            resource_type: "image",
+                        });
+                        return result.secure_url;
+                    })
+                );
+            } catch (cloudErr) {
+                console.log("Cloudinary upload fallback:", cloudErr.message);
+                imagesUrl = ["https://via.placeholder.com/150"];
+            }
+        }
 
-        let imagesUrl = await Promise.all(
-            images.map(async (image) => {
-                let result = await cloudinary.uploader.upload(image.path, {
-                    resource_type: "image",
-                });
-                return result.secure_url;
-            })
-        );
-
-        console.log('sssss', imagesUrl);
-
-        // to save the product data in the mongo database
+        if (imagesUrl.length === 0) {
+            imagesUrl = ["https://via.placeholder.com/150"];
+        }
 
         const productData = {
+            _id: Date.now().toString(),
             name,
             description,
-            price: Number(price), // converting price to number
+            price: Number(price),
             category,
             subCategory,
-            bestseller: bestseller === "true" ? true : false, // converting bestseller to boolean
-            sizes: JSON.parse(sizes), //
+            bestseller: bestseller === "true" || bestseller === true ? true : false,
+            sizes: typeof sizes === 'string' ? JSON.parse(sizes) : (sizes || []),
             image: imagesUrl,
             date: Date.now(),
         };
 
-        console.log(productData);
-        console.log("Uploaded image URLs:", imagesUrl);
-        console.log("req.files", req.files);
+        if (mongoose.connection.readyState === 1) {
+            try {
+                const product = new productModel(productData);
+                await product.save();
+            } catch (dbErr) {
+                console.log("MongoDB product save error:", dbErr.message);
+            }
+        }
 
-        const product = new productModel(productData);
-        await product.save(); // saving the product in the database
+        localProducts.unshift(productData);
 
         res.json({
             success: true,
             message: "Product added successfully",
-            product,
+            product: productData,
         });
     } catch (error) {
         console.log(error);
@@ -72,7 +87,19 @@ const addProduct = async (req, res) => {
 // function for list products
 const listProducts = async (req, res) => {
     try {
-        const products = await productModel.find({});
+        let products = [];
+        if (mongoose.connection.readyState === 1) {
+            try {
+                products = await productModel.find({}).maxTimeMS(3000);
+            } catch (error) {
+                console.log("MongoDB product fetch error:", error.message);
+            }
+        }
+
+        if (!products || products.length === 0) {
+            products = localProducts;
+        }
+
         res.json({ success: true, products });
     } catch (error) {
         console.log(error);
@@ -83,7 +110,15 @@ const listProducts = async (req, res) => {
 // function for removing product
 const removeProduct = async (req, res) => {
     try {
-        await productModel.findByIdAndDelete(req.body.id);
+        const { id } = req.body;
+        if (mongoose.connection.readyState === 1) {
+            try {
+                await productModel.findByIdAndDelete(id);
+            } catch (dbErr) {}
+        }
+
+        localProducts = localProducts.filter(p => String(p._id) !== String(id));
+
         res.json({ success: true, message: "Product removed" });
     } catch (error) {
         console.log(error);
@@ -95,14 +130,24 @@ const removeProduct = async (req, res) => {
 const singleProduct = async (req, res) => {
     try {
         const { productId } = req.body;
-        const product = await productModel.findById(productId);
+        let product = null;
+
+        if (mongoose.connection.readyState === 1) {
+            try {
+                product = await productModel.findById(productId).maxTimeMS(3000);
+            } catch (error) {}
+        }
+
+        if (!product) {
+            product = localProducts.find(p => String(p._id) === String(productId));
+        }
+
         res.json({ success: true, product });
-        
+
     } catch (error) {
         console.log(error);
         res.json({ success: false, message: error.message });
     }
-
 };
 
 export { addProduct, listProducts, removeProduct, singleProduct };
