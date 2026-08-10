@@ -30,23 +30,29 @@ const addProduct = async (req, res) => {
                 (item) => item !== undefined
             );
 
-            try {
-                imagesUrl = await Promise.all(
-                    images.map(async (image) => {
-                        let result = await cloudinary.uploader.upload(image.path, {
-                            resource_type: "image",
-                        });
-                        return result.secure_url;
-                    })
-                );
-            } catch (cloudErr) {
-                console.log("Cloudinary upload fallback:", cloudErr.message);
-                imagesUrl = ["https://via.placeholder.com/150"];
-            }
+            imagesUrl = await Promise.all(
+                images.map(async (image) => {
+                    if (process.env.CLOUDINARY_API_KEY) {
+                        try {
+                            let result = await cloudinary.uploader.upload(image.path, {
+                                resource_type: "image",
+                            });
+                            if (result && result.secure_url) {
+                                return result.secure_url;
+                            }
+                        } catch (cloudErr) {
+                            console.log("Cloudinary upload fallback to local URL:", cloudErr.message);
+                        }
+                    }
+                    const host = req.get('host') || 'localhost:4000';
+                    const protocol = req.protocol || 'http';
+                    return `${protocol}://${host}/uploads/${image.filename}`;
+                })
+            );
         }
 
         if (imagesUrl.length === 0) {
-            imagesUrl = ["https://via.placeholder.com/150"];
+            imagesUrl = ["http://localhost:4000/uploads/p_img1.png"];
         }
 
         const productData = {
