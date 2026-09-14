@@ -8,17 +8,9 @@ The platform includes product discovery, shopping cart management, wishlist func
 
 ## 🌐 Live Demo
 
-[View Live Project](YOUR_LIVE_DEMO_LINK)
+[View Live Project](https://ecommerce-clothing-store-ten.vercel.app/)
 
 > Replace `YOUR_LIVE_DEMO_LINK` with your deployed project URL.
-
----
-
-## 📸 Project Preview
-
-![E-Commerce Preview](./assets/preview.png)
-
-> Add a screenshot named `preview.png` inside an `assets` folder in the repository.
 
 ---
 
